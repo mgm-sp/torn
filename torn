@@ -1,0 +1,112 @@
+#!/bin/sh
+
+###################################################
+#  Torn - cut screenshots into pieces
+#  Copyright 2019 Benjamin Kellermann
+#
+#  This file is heavily inspired of Shutter.
+#  Copyright (C) 2008-2013 Mario Kemper <mario.kemper@gmail.com>
+#
+#  Shutter is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  Shutter is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with Shutter; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+###################################################
+
+usage(){
+	echo "usage: $(basename "$0") [-rltb] <filename> [<dest_file>]"
+	echo "ex:    $(basename "$0") -rt foo.png # right and top are straight"
+	exit 1
+}
+
+RIGHT_O=true
+RIGHT=-10+0
+LEFT_O=true
+LEFT=+10+0
+TOP_O=true
+TOP=+0+10
+BOTTOM_O=true
+BOTTOM=+0-10
+
+while getopts rltb option; do
+	case "$option" in
+		r) RIGHT_O=false ;;
+		l) LEFT_O=false ;;
+		t) TOP_O=false;;
+		b) BOTTOM_O=false;;
+		\?) usage ;;
+	esac
+done
+shift $(expr $OPTIND - 1)
+
+case $# in
+	0)
+		echo "Wrong number of arguments"
+		usage
+		exit
+		;;
+	1)
+		INFILE="$1"
+		OUTFILE="$1"
+		;;
+	2)
+		INFILE="$1"
+		OUTFILE="$2"
+		;;
+	*)
+		usage
+		;;
+esac
+
+TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
+
+cp "$INFILE" "$TMPFILE"
+
+SIDES="$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,$BOTTOM_O"
+
+# add border on all sides we do not want an effect
+convert "${TMPFILE}" -border 10 "${TMPFILE}"
+for side in $SIDES; do
+	C=$(echo "$side"|cut -f1 -d,)
+	Q=$(echo "$side"|cut -f2 -d,)
+	if [ "$Q" = "true" ]; then
+		convert "${TMPFILE}" -crop "$C" +repage "${TMPFILE}"
+	fi
+done
+
+# Generate torned effect
+
+convert "${TMPFILE}" \( +clone -threshold -1 -virtual-pixel black \
+-spread 10 -blur 0x3 -threshold 50% -spread 1 -blur 0x.7 \) \
++matte -compose Copy_Opacity -composite "${TMPFILE}"
+
+# remove added border on all sides we do not want an effect
+for side in $SIDES; do
+	C=$(echo "$side"|cut -f1 -d,)
+	Q=$(echo "$side"|cut -f2 -d,)
+	if [ "$Q" = "false" ]; then
+		convert "${TMPFILE}" -crop "$C" +repage "${TMPFILE}"
+	fi
+done
+
+# Add hard shadow
+
+convert "${TMPFILE}" \( +clone -background black  -shadow 80x3+5+5 \) \
++swap -background none -mosaic +repage "${TMPFILE}"
+
+mv "$TMPFILE" "$OUTFILE"
+
+exit 0
+
+
+
