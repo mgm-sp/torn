@@ -24,8 +24,9 @@
 ###################################################
 
 usage(){
-	echo "usage: $(basename "$0") [-rltb] <filename> [<dest_file>]"
+	echo "usage: $(basename "$0") [-rltb] [-c <from-to>] <filename> [<dest_file>]"
 	echo "ex:    $(basename "$0") -rt foo.png # right and top are straight"
+	echo "ex:    $(basename "$0") -rl -c 200-300 foo.png # right and left are straight, cut from px 200-300"
 	exit 1
 }
 
@@ -38,12 +39,16 @@ TOP=+0+10
 BOTTOM_O=true
 BOTTOM=+0-10
 
-while getopts rltb option; do
+while getopts rltbc: option; do
 	case "$option" in
 		r) RIGHT_O=false ;;
 		l) LEFT_O=false ;;
 		t) TOP_O=false;;
 		b) BOTTOM_O=false;;
+		c)
+			CUT_FROM=$(echo "$OPTARG"|cut -f1 -d-)
+			CUT_TO=$(echo "$OPTARG"|cut -f2 -d-)
+			;;
 		\?) usage ;;
 	esac
 done
@@ -68,9 +73,30 @@ case $# in
 		;;
 esac
 
+if [ -n "$CUT_FROM" ]; then
+	SIZE_W=$(identify -format "%[fx:w]" "$INFILE")
+	SIZE_H=$(identify -format "%[fx:h]" "$INFILE")
+	if [ "$CUT_TO" -le "$CUT_FROM" ];then
+		echo "Error: $CUT_FROM is larger than $CUT_TO"
+		exit
+	fi
+	if [ "$CUT_TO" -ge "$SIZE_H" ];then
+		echo "Error: $CUT_TO is larger than the height of the picture ($SIZE_H)"
+		exit
+	fi
+
+fi
+
 TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
 
 cp "$INFILE" "$TMPFILE"
+
+if [ -n "$CUT_FROM" ]; then
+	TOP_TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
+	convert "${TMPFILE}" -crop "${SIZE_W}x${CUT_FROM}+0+0" "${TOP_TMPFILE}"
+	BOT_TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
+	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" "${BOT_TMPFILE}"
+fi
 
 SIDES="$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,$BOTTOM_O"
 
