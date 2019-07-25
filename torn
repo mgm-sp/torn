@@ -123,13 +123,18 @@ torn() {
 }
 
 if [ -n "$CUT_FROM" ]; then
-	TOP_TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
-	convert "${TMPFILE}" -crop "${SIZE_W}x${CUT_FROM}+0+0" "${TOP_TMPFILE}"
-	BOT_TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
-	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" "${BOT_TMPFILE}"
-fi
+	TOP_TMPFILE=$(mktemp "torned-top_tmp_XXXXXX_$(basename "$INFILE")")
+	convert "${TMPFILE}" -crop "${SIZE_W}x${CUT_FROM}+0+0" +repage "${TOP_TMPFILE}"
+	BOT_TMPFILE=$(mktemp "torned-bot_tmp_XXXXXX_$(basename "$INFILE")")
+	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" +repage "${BOT_TMPFILE}"
 
-torn "$TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,$BOTTOM_O"
+	torn "$TOP_TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,true"
+	torn "$BOT_TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,true $BOTTOM,$BOTTOM_O"
+	convert -append "$TOP_TMPFILE" "$BOT_TMPFILE" "$TMPFILE"
+	rm "$TOP_TMPFILE" "$BOT_TMPFILE"
+else
+	torn "$TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,$BOTTOM_O"
+fi
 
 mv "$TMPFILE" "$OUTFILE"
 
