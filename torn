@@ -93,12 +93,12 @@ cp "$INFILE" "$TMPFILE"
 
 torn() {
 	# add border on all sides we do not want an effect
-	convert "$1" -border 10 "$1"
+	mogrify -border 10 "$1"
 	for side in $2; do
 		C=$(echo "$side"|cut -f1 -d,)
 		Q=$(echo "$side"|cut -f2 -d,)
 		if [ "$Q" = "true" ]; then
-			convert "$1" -crop "$C" +repage "$1"
+			mogrify -crop "$C" +repage "$1"
 		fi
 	done
 
@@ -113,7 +113,7 @@ torn() {
 		C=$(echo "$side"|cut -f1 -d,)
 		Q=$(echo "$side"|cut -f2 -d,)
 		if [ "$Q" = "false" ]; then
-			convert "$1" -crop "$C" +repage "$1"
+			mogrify -crop "$C" +repage "$1"
 		fi
 	done
 
