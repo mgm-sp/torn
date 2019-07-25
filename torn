@@ -46,8 +46,12 @@ while getopts rltbc: option; do
 		t) TOP_O=false;;
 		b) BOTTOM_O=false;;
 		c)
-			CUT_FROM=$(echo "$OPTARG"|cut -f1 -d-)
-			CUT_TO=$(echo "$OPTARG"|cut -f2 -d-)
+			CUT_FROM=$(echo "$OPTARG"|cut -f1 -d-|grep "^[0-9]*$")
+			CUT_TO=$(echo "$OPTARG"|cut -f2 -d-|grep "^[0-9]*$")
+			if [ -z "$CUT_TO" ] || [ -z "$CUT_FROM" ]; then
+				echo "Error: Wrong format for -c"
+				exit
+			fi
 			;;
 		\?) usage ;;
 	esac
