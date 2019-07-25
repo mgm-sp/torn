@@ -98,37 +98,39 @@ if [ -n "$CUT_FROM" ]; then
 	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" "${BOT_TMPFILE}"
 fi
 
+torn() {
+	# add border on all sides we do not want an effect
+	convert "$1" -border 10 "$1"
+	for side in $2; do
+		C=$(echo "$side"|cut -f1 -d,)
+		Q=$(echo "$side"|cut -f2 -d,)
+		if [ "$Q" = "true" ]; then
+			convert "$1" -crop "$C" +repage "$1"
+		fi
+	done
+
+	# Generate torned effect
+
+	convert "$1" \( +clone -threshold -1 -virtual-pixel black \
+		-spread 10 -blur 0x3 -threshold 50% -spread 1 -blur 0x.7 \) \
+		+matte -compose Copy_Opacity -composite "$1"
+
+	# remove added border on all sides we do not want an effect
+	for side in $SIDES; do
+		C=$(echo "$side"|cut -f1 -d,)
+		Q=$(echo "$side"|cut -f2 -d,)
+		if [ "$Q" = "false" ]; then
+			convert "$1" -crop "$C" +repage "$1"
+		fi
+	done
+
+	# Add hard shadow
+	convert "$1" \( +clone -background black  -shadow 80x3+5+5 \) \
+		+swap -background none -mosaic +repage "$1"
+}
+
 SIDES="$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,$BOTTOM_O"
-
-# add border on all sides we do not want an effect
-convert "${TMPFILE}" -border 10 "${TMPFILE}"
-for side in $SIDES; do
-	C=$(echo "$side"|cut -f1 -d,)
-	Q=$(echo "$side"|cut -f2 -d,)
-	if [ "$Q" = "true" ]; then
-		convert "${TMPFILE}" -crop "$C" +repage "${TMPFILE}"
-	fi
-done
-
-# Generate torned effect
-
-convert "${TMPFILE}" \( +clone -threshold -1 -virtual-pixel black \
--spread 10 -blur 0x3 -threshold 50% -spread 1 -blur 0x.7 \) \
-+matte -compose Copy_Opacity -composite "${TMPFILE}"
-
-# remove added border on all sides we do not want an effect
-for side in $SIDES; do
-	C=$(echo "$side"|cut -f1 -d,)
-	Q=$(echo "$side"|cut -f2 -d,)
-	if [ "$Q" = "false" ]; then
-		convert "${TMPFILE}" -crop "$C" +repage "${TMPFILE}"
-	fi
-done
-
-# Add hard shadow
-
-convert "${TMPFILE}" \( +clone -background black  -shadow 80x3+5+5 \) \
-+swap -background none -mosaic +repage "${TMPFILE}"
+torn "$TMPFILE" "$SIDES"
 
 mv "$TMPFILE" "$OUTFILE"
 
