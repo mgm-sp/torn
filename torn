@@ -91,7 +91,7 @@ if [ -n "$CUT_FROM" ]; then
 
 fi
 
-TMPFILE=$(mktemp "torned_tmp_XXXXXX_$(basename "$INFILE")")
+TMPFILE=$(mktemp "torned_tmp_$(basename "$INFILE")_XXXXXX")
 
 cp "$INFILE" "$TMPFILE"
 
@@ -127,9 +127,9 @@ torn() {
 }
 
 if [ -n "$CUT_FROM" ]; then
-	TOP_TMPFILE=$(mktemp "torned-top_tmp_XXXXXX_$(basename "$INFILE")")
+	TOP_TMPFILE=$(mktemp "torned-top_tmp_$(basename "$INFILE")_XXXXXX")
 	convert "${TMPFILE}" -crop "${SIZE_W}x${CUT_FROM}+0+0" +repage "${TOP_TMPFILE}"
-	BOT_TMPFILE=$(mktemp "torned-bot_tmp_XXXXXX_$(basename "$INFILE")")
+	BOT_TMPFILE=$(mktemp "torned-bot_tmp_$(basename "$INFILE")_XXXXXX")
 	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" +repage "${BOT_TMPFILE}"
 
 	torn "$TOP_TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,true"
