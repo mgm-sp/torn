@@ -24,9 +24,10 @@
 ###################################################
 
 usage(){
-	echo "usage: $(basename "$0") [-rltb] [-c <from-to>] <filename> [<dest_file>]"
+	echo "usage: $(basename "$0") [-rltb] [-c <cropfrom-to>|-a <autocrop-color>] <filename> [<dest_file>]"
 	echo "ex:    $(basename "$0") -rt foo.png # right and top are straight"
 	echo "ex:    $(basename "$0") -rl -c 200-300 foo.png # right and left are straight, cut from px 200-300"
+	echo "ex:    $(basename "$0") -rl -a FF0000 foo.png # right and left are straight, cut everything which has color FF000"
 	exit 1
 }
 
@@ -39,7 +40,7 @@ TOP=+0+10
 BOTTOM_O=true
 BOTTOM=+0-10
 
-while getopts rltbc: option; do
+while getopts rltbc:a: option; do
 	case "$option" in
 		r) RIGHT_O=false ;;
 		l) LEFT_O=false ;;
@@ -52,6 +53,9 @@ while getopts rltbc: option; do
 				echo "Error: Wrong format for -c"
 				exit
 			fi
+			;;
+		a)
+			AUTOCUT_COLOR=$OPTARG
 			;;
 		\?) usage ;;
 	esac
@@ -77,9 +81,15 @@ case $# in
 		;;
 esac
 
-if [ -n "$CUT_FROM" ]; then
+if [ -n "$AUTOCUT_COLOR" ] && [ -n "$CUT_FROM" ]; then
+	echo "Error: You may only use -c or -a"
+	exit
+fi
+if [ -n "$AUTOCUT_COLOR" ] || [ -n "$CUT_FROM" ]; then
 	SIZE_W=$(identify -format "%[fx:w]" "$INFILE")
 	SIZE_H=$(identify -format "%[fx:h]" "$INFILE")
+fi
+if [ -n "$CUT_FROM" ]; then
 	if [ "$CUT_TO" -le "$CUT_FROM" ];then
 		echo "Error: $CUT_FROM is larger than $CUT_TO"
 		exit
@@ -125,6 +135,17 @@ torn() {
 	convert "$1" \( +clone -background black  -shadow 80x3+5+5 \) \
 		+swap -background none -mosaic +repage "$1"
 }
+
+if [ -n "$AUTOCUT_COLOR" ]; then
+	TXT_TMPFILE=$(mktemp "torned_tmp_$(basename "$INFILE")_XXXXXX.txt")
+	convert "$TMPFILE" -alpha deactivate -crop 1x10000+0+0 "$TXT_TMPFILE"
+
+	FROM_TO=$(grep -i "$AUTOCUT_COLOR" "$TXT_TMPFILE" |cut -f1 -d:|cut -f2 -d, |tr "\n" "X" |sed 's/^\([^X]*\).*X\([^X]*\)X$/\1 \2/')
+	CUT_FROM=$(echo $FROM_TO |cut -f1 -d" ")
+	CUT_TO=$(echo $FROM_TO |cut -f2 -d" ")
+
+	rm "$TXT_TMPFILE"
+fi
 
 if [ -n "$CUT_FROM" ]; then
 	TOP_TMPFILE=$(mktemp "torned-top_tmp_$(basename "$INFILE")_XXXXXX")
