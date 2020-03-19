@@ -31,10 +31,10 @@ usage(){
 }
 help() {
 	cat <<-HELP
-		ex:    $(basename $0) -rtB foo.png # right and top are straight, bottom torned, default is used for left
-		ex:    $(basename $0) -c 200-300 foo.png #cut from px 200-300
-		ex:    $(basename $0) -a FF0000 foo.png # cut everything which has color FF000
-		ex:    $(basename $0) -i foo.png # launch interactive selection
+		ex:    $(basename "$0") -rtB foo.png # right and top are straight, bottom torned, default is used for left
+		ex:    $(basename "$0") -c 200-300 foo.png #cut from px 200-300
+		ex:    $(basename "$0") -a FF0000 foo.png # cut everything which has color FF000
+		ex:    $(basename "$0") -i foo.png # launch interactive selection
 
 		You may place a file in $CONFIGFILE with your favourite default config, e.g.:
 		TORN_RIGHT=$TORN_RIGHT
