@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Torn
-Exec=/home/ben/bin/torn -i %u
-Icon=/home/ben/src/torn/torn.png
+Exec=torn -i %u
+Icon=torn
 Comment=Cut your Screenshot into pieces
 GenericName=Torn
 Encoding=UTF-8
