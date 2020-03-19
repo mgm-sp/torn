@@ -23,13 +23,26 @@
 #
 ###################################################
 
+CONFIGFILE="$HOME/.config/tornrc.sh"
+
 usage(){
-	echo "usage: $(basename "$0") [-rltb] [-c <cropfrom-to>|-a <autocrop-color>] [-i] <filename> [<dest_file>]"
-	echo "ex:    $(basename "$0") -rt foo.png # right and top are straight"
-	echo "ex:    $(basename "$0") -rl -c 200-300 foo.png # right and left are straight, cut from px 200-300"
-	echo "ex:    $(basename "$0") -rl -a FF0000 foo.png # right and left are straight, cut everything which has color FF000"
-	echo "ex:    $(basename "$0") -i foo.png # launch interactive selection"
-	exit 1
+	echo "usage: $(basename "$0") [-rltbRLTBh] [-c <cropfrom-to>|-a <autocrop-color>] [-i] <filename> [<dest_file>]"
+	echo "ex:    $(basename "$0") -h # print long help"
+}
+help() {
+	cat <<-HELP
+		ex:    $(basename $0) -rtB foo.png # right and top are straight, bottom torned, default is used for left
+		ex:    $(basename $0) -c 200-300 foo.png #cut from px 200-300
+		ex:    $(basename $0) -a FF0000 foo.png # cut everything which has color FF000
+		ex:    $(basename $0) -i foo.png # launch interactive selection
+
+		You may place a file in $CONFIGFILE with your favourite default config, e.g.:
+		TORN_RIGHT=$TORN_RIGHT
+		TORN_LEFT=$TORN_LEFT
+		TORN_TOP=$TORN_TOP
+		TORN_BOTTOM=$TORN_BOTTOM
+		AUTOCUT_COLOR=ff0000
+	HELP
 }
 
 TORN_RIGHT=true
@@ -40,6 +53,10 @@ TORN_TOP=true
 TOP_OFFSET=+0+10
 TORN_BOTTOM=true
 BOTTOM_OFFSET=+0-10
+
+if [ -f "$CONFIGFILE" ]; then
+	. "$CONFIGFILE"
+fi
 
 paint() {
 	if [ "true" = "$TORN_LEFT" ];then
@@ -118,7 +135,7 @@ readc() { # arg: <variable-name>
   fi
 }
 
-while getopts rltbc:a:i option; do
+while getopts rRlLtTbBc:a:ih option; do
 	case "$option" in
 		i)
 			paint
@@ -137,9 +154,13 @@ while getopts rltbc:a:i option; do
 			done
 			;;
 		r) TORN_RIGHT=false ;;
+		R) TORN_RIGHT=true ;;
 		l) TORN_LEFT=false ;;
+		L) TORN_LEFT=true ;;
 		t) TORN_TOP=false;;
+		T) TORN_TOP=true;;
 		b) TORN_BOTTOM=false;;
+		B) TORN_BOTTOM=true;;
 		c)
 			CUT_FROM=$(echo "$OPTARG"|cut -f1 -d-|grep "^[0-9]*$")
 			CUT_TO=$(echo "$OPTARG"|cut -f2 -d-|grep "^[0-9]*$")
@@ -151,7 +172,8 @@ while getopts rltbc:a:i option; do
 		a)
 			AUTOCUT_COLOR=$OPTARG
 			;;
-		\?) usage ;;
+		h) usage; help; exit 0 ;;
+		\?) usage; exit 1 ;;
 	esac
 done
 shift $(expr $OPTIND - 1)
@@ -160,7 +182,7 @@ case $# in
 	0)
 		echo "Wrong number of arguments"
 		usage
-		exit
+		exit 1
 		;;
 	1)
 		INFILE="$1"
@@ -172,6 +194,7 @@ case $# in
 		;;
 	*)
 		usage
+		exit 1
 		;;
 esac
 
