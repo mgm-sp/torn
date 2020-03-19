@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Torn
+Exec=/home/ben/bin/torn -i %u
+Icon=/home/ben/src/torn/torn.png
+Comment=Cut your Screenshot into pieces
+GenericName=Torn
+Encoding=UTF-8
+Version=1.0
+Type=Application
+MimeType=image/gif;image/jpeg;image/png;
+Terminal=true
+Categories=Graphics;
