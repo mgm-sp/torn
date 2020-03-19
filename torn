@@ -24,10 +24,11 @@
 ###################################################
 
 usage(){
-	echo "usage: $(basename "$0") [-rltb] [-c <cropfrom-to>|-a <autocrop-color>] <filename> [<dest_file>]"
+	echo "usage: $(basename "$0") [-rltb] [-c <cropfrom-to>|-a <autocrop-color>] [-i] <filename> [<dest_file>]"
 	echo "ex:    $(basename "$0") -rt foo.png # right and top are straight"
 	echo "ex:    $(basename "$0") -rl -c 200-300 foo.png # right and left are straight, cut from px 200-300"
 	echo "ex:    $(basename "$0") -rl -a FF0000 foo.png # right and left are straight, cut everything which has color FF000"
+	echo "ex:    $(basename "$0") -i foo.png # launch interactive selection"
 	exit 1
 }
 
@@ -40,8 +41,101 @@ TOP=+0+10
 BOTTOM_O=true
 BOTTOM=+0-10
 
-while getopts rltbc:a: option; do
+paint() {
+	if [ "true" = "$LEFT_O" ];then
+		L="┆"
+	else
+		L="│"
+	fi
+	if [ "true" = "$RIGHT_O" ];then
+		R="┆"
+	else
+		R="│"
+	fi
+	printf "┌"
+	if [ "true" = "$TOP_O" ];then
+		printf "┈┈┈┈┈┈┈┈┈t┈┈┈┈┈┈┈┈┈"
+	else
+		printf "─────────t─────────"
+	fi
+	printf "┐\n"
+
+	printf "%s                   %s\n" $L $R
+
+	if [ -n "$AUTOCUT_COLOR" ];then
+		printf "├"
+		printf "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+		printf "┤\n"
+
+		printf "l      #%s      r\n" "$AUTOCUT_COLOR"
+
+		printf "├"
+		printf "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+		printf "┤\n"
+	else
+		printf "l                   r\n"
+	fi
+
+	printf "%s                   %s\n" $L $R
+
+	printf "└"
+	if [ "true" = "$BOTTOM_O" ];then
+		printf "┈┈┈┈┈┈┈┈┈b┈┈┈┈┈┈┈┈┈"
+	else
+		printf "─────────b─────────"
+	fi
+	printf "┘\n"
+	printf "[tlbr#q] "
+}
+# from https://unix.stackexchange.com/questions/464930/can-i-read-a-single-character-from-stdin-in-posix-shell
+readc() { # arg: <variable-name>
+  if [ -t 0 ]; then
+    # if stdin is a tty device, put it out of icanon, set min and
+    # time to sane value, but don't otherwise touch other input or
+    # or local settings (echo, isig, icrnl...). Take a backup of the
+    # previous settings beforehand.
+    saved_tty_settings=$(stty -g)
+    stty -icanon min 1 time 0
+  fi
+  eval "$1="
+  while
+    # read one byte, using a work around for the fact that command
+    # substitution strips the last character.
+    c=$(dd bs=1 count=1 2> /dev/null; echo .)
+    c=${c%.}
+
+    # break out of the loop on empty input (eof) or if a full character
+    # has been accumulated in the output variable (using "wc -m" to count
+    # the number of characters).
+    [ -n "$c" ] &&
+      eval "$1=\${$1}"'$c
+        [ "$(($(printf %s "${'"$1"'}" | wc -m)))" -eq 0 ]'; do
+    continue
+  done
+  if [ -t 0 ]; then
+    # restore settings saved earlier if stdin is a tty device.
+    stty "$saved_tty_settings"
+  fi
+}
+
+while getopts rltbc:a:i option; do
 	case "$option" in
+		i)
+			paint
+			while readc C; do
+				if [ -z "$AUTOCUT_COLOR" ]; then N=5; else N=7; fi
+				case "$C" in
+					r) if [ "true" = $RIGHT_O ]; then RIGHT_O=false; else RIGHT_O=true; fi ;;
+					l) if [ "true" = $LEFT_O ]; then LEFT_O=false; else LEFT_O=true; fi ;;
+					t) if [ "true" = $TOP_O ]; then TOP_O=false; else TOP_O=true; fi ;;
+					b) if [ "true" = $BOTTOM_O ]; then BOTTOM_O=false; else BOTTOM_O=true; fi ;;
+					"#") readc A; readc B; readc C; readc D; readc E; readc F; AUTOCUT_COLOR="$A$B$C$D$E$F" ;;
+					q) printf "\rPlease wait while processing your screenshot..."; break;;
+				esac
+				printf "\r\033[K\033[${N}A"
+				paint
+			done
+			;;
 		r) RIGHT_O=false ;;
 		l) LEFT_O=false ;;
 		t) TOP_O=false;;
