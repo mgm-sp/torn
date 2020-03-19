@@ -143,6 +143,7 @@ if [ -n "$AUTOCUT_COLOR" ]; then
 	FROM_TO=$(grep -i "$AUTOCUT_COLOR" "$TXT_TMPFILE" |cut -f1 -d:|cut -f2 -d, |tr "\n" "X" |sed 's/^\([^X]*\).*X\([^X]*\)X$/\1 \2/')
 	CUT_FROM=$(echo $FROM_TO |cut -f1 -d" ")
 	CUT_TO=$(echo $FROM_TO |cut -f2 -d" ")
+	CUT_TO=$((CUT_TO + 1))
 
 	rm "$TXT_TMPFILE"
 fi
