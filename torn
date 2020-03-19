@@ -32,28 +32,28 @@ usage(){
 	exit 1
 }
 
-RIGHT_O=true
-RIGHT=-10+0
-LEFT_O=true
-LEFT=+10+0
-TOP_O=true
-TOP=+0+10
-BOTTOM_O=true
-BOTTOM=+0-10
+TORN_RIGHT=true
+RIGHT_OFFSET=-10+0
+TORN_LEFT=true
+LEFT_OFFSET=+10+0
+TORN_TOP=true
+TOP_OFFSET=+0+10
+TORN_BOTTOM=true
+BOTTOM_OFFSET=+0-10
 
 paint() {
-	if [ "true" = "$LEFT_O" ];then
+	if [ "true" = "$TORN_LEFT" ];then
 		L="┆"
 	else
 		L="│"
 	fi
-	if [ "true" = "$RIGHT_O" ];then
+	if [ "true" = "$TORN_RIGHT" ];then
 		R="┆"
 	else
 		R="│"
 	fi
 	printf "┌"
-	if [ "true" = "$TOP_O" ];then
+	if [ "true" = "$TORN_TOP" ];then
 		printf "┈┈┈┈┈┈┈┈┈t┈┈┈┈┈┈┈┈┈"
 	else
 		printf "─────────t─────────"
@@ -79,7 +79,7 @@ paint() {
 	printf "%s                   %s\n" $L $R
 
 	printf "└"
-	if [ "true" = "$BOTTOM_O" ];then
+	if [ "true" = "$TORN_BOTTOM" ];then
 		printf "┈┈┈┈┈┈┈┈┈b┈┈┈┈┈┈┈┈┈"
 	else
 		printf "─────────b─────────"
@@ -125,21 +125,21 @@ while getopts rltbc:a:i option; do
 			while readc C; do
 				if [ -z "$AUTOCUT_COLOR" ]; then N=5; else N=7; fi
 				case "$C" in
-					r) if [ "true" = $RIGHT_O ]; then RIGHT_O=false; else RIGHT_O=true; fi ;;
-					l) if [ "true" = $LEFT_O ]; then LEFT_O=false; else LEFT_O=true; fi ;;
-					t) if [ "true" = $TOP_O ]; then TOP_O=false; else TOP_O=true; fi ;;
-					b) if [ "true" = $BOTTOM_O ]; then BOTTOM_O=false; else BOTTOM_O=true; fi ;;
+					r) if [ "true" = $TORN_RIGHT ]; then TORN_RIGHT=false; else TORN_RIGHT=true; fi ;;
+					l) if [ "true" = $TORN_LEFT ]; then TORN_LEFT=false; else TORN_LEFT=true; fi ;;
+					t) if [ "true" = $TORN_TOP ]; then TORN_TOP=false; else TORN_TOP=true; fi ;;
+					b) if [ "true" = $TORN_BOTTOM ]; then TORN_BOTTOM=false; else TORN_BOTTOM=true; fi ;;
 					"#") readc A; readc B; readc C; readc D; readc E; readc F; AUTOCUT_COLOR="$A$B$C$D$E$F" ;;
 					q) printf "\rPlease wait while processing your screenshot..."; break;;
 				esac
-				printf "\r\033[K\033[${N}A"
+				printf "\r\033[K\033[%sA" $N
 				paint
 			done
 			;;
-		r) RIGHT_O=false ;;
-		l) LEFT_O=false ;;
-		t) TOP_O=false;;
-		b) BOTTOM_O=false;;
+		r) TORN_RIGHT=false ;;
+		l) TORN_LEFT=false ;;
+		t) TORN_TOP=false;;
+		b) TORN_BOTTOM=false;;
 		c)
 			CUT_FROM=$(echo "$OPTARG"|cut -f1 -d-|grep "^[0-9]*$")
 			CUT_TO=$(echo "$OPTARG"|cut -f2 -d-|grep "^[0-9]*$")
@@ -235,8 +235,8 @@ if [ -n "$AUTOCUT_COLOR" ]; then
 	convert "$TMPFILE" -alpha deactivate -crop 1x10000+0+0 "$TXT_TMPFILE"
 
 	FROM_TO=$(grep -i "$AUTOCUT_COLOR" "$TXT_TMPFILE" |cut -f1 -d:|cut -f2 -d, |tr "\n" "X" |sed 's/^\([^X]*\).*X\([^X]*\)X$/\1 \2/')
-	CUT_FROM=$(echo $FROM_TO |cut -f1 -d" ")
-	CUT_TO=$(echo $FROM_TO |cut -f2 -d" ")
+	CUT_FROM=$(echo "$FROM_TO" |cut -f1 -d" ")
+	CUT_TO=$(echo "$FROM_TO" |cut -f2 -d" ")
 	CUT_TO=$((CUT_TO + 1))
 
 	rm "$TXT_TMPFILE"
@@ -248,12 +248,12 @@ if [ -n "$CUT_FROM" ]; then
 	BOT_TMPFILE=$(mktemp "torned-bot_tmp_$(basename "$INFILE")_XXXXXX")
 	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" +repage "${BOT_TMPFILE}"
 
-	torn "$TOP_TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,true"
-	torn "$BOT_TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,true $BOTTOM,$BOTTOM_O"
+	torn "$TOP_TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,$TORN_TOP $BOTTOM_OFFSET,true"
+	torn "$BOT_TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,true $BOTTOM_OFFSET,$TORN_BOTTOM"
 	convert -append "$TOP_TMPFILE" "$BOT_TMPFILE" "$TMPFILE"
 	rm "$TOP_TMPFILE" "$BOT_TMPFILE"
 else
-	torn "$TMPFILE" "$RIGHT,$RIGHT_O $LEFT,$LEFT_O $TOP,$TOP_O $BOTTOM,$BOTTOM_O"
+	torn "$TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,$TORN_TOP $BOTTOM_OFFSET,$TORN_BOTTOM"
 fi
 
 mv "$TMPFILE" "$OUTFILE"
