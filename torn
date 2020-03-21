@@ -138,21 +138,7 @@ readc() { # arg: <variable-name>
 while getopts rRlLtTbBc:a:ih option; do
 	case "$option" in
 		i)
-			paint
-			while readc C; do
-				if [ -z "$AUTOCUT_COLOR" ]; then N=5; else N=7; fi
-				case "$C" in
-					r) if [ "true" = $TORN_RIGHT ]; then TORN_RIGHT=false; else TORN_RIGHT=true; fi ;;
-					l) if [ "true" = $TORN_LEFT ]; then TORN_LEFT=false; else TORN_LEFT=true; fi ;;
-					t) if [ "true" = $TORN_TOP ]; then TORN_TOP=false; else TORN_TOP=true; fi ;;
-					b) if [ "true" = $TORN_BOTTOM ]; then TORN_BOTTOM=false; else TORN_BOTTOM=true; fi ;;
-					"#") readc A; readc B; readc C; readc D; readc E; readc F; AUTOCUT_COLOR="$A$B$C$D$E$F" ;;
-					q) printf "\rPlease wait while processing your screenshot..."; break;;
-				esac
-				printf "\r\033[K\033[%sA" $N
-				paint
-			done
-			;;
+			INTERACTIVE=true;;
 		r) TORN_RIGHT=false ;;
 		R) TORN_RIGHT=true ;;
 		l) TORN_LEFT=false ;;
@@ -202,6 +188,23 @@ if [ -n "$AUTOCUT_COLOR" ] && [ -n "$CUT_FROM" ]; then
 	echo "Error: You may only use -c or -a"
 	exit
 fi
+if [ "$INTERACTIVE" = "true" ]; then
+	paint
+	while readc C; do
+		if [ -z "$AUTOCUT_COLOR" ]; then N=5; else N=7; fi
+		case "$C" in
+			r) if [ "true" = $TORN_RIGHT ]; then TORN_RIGHT=false; else TORN_RIGHT=true; fi ;;
+			l) if [ "true" = $TORN_LEFT ]; then TORN_LEFT=false; else TORN_LEFT=true; fi ;;
+			t) if [ "true" = $TORN_TOP ]; then TORN_TOP=false; else TORN_TOP=true; fi ;;
+			b) if [ "true" = $TORN_BOTTOM ]; then TORN_BOTTOM=false; else TORN_BOTTOM=true; fi ;;
+			"#") readc A; readc B; readc C; readc D; readc E; readc F; AUTOCUT_COLOR="$A$B$C$D$E$F" ;;
+			q) printf "\rPlease wait while processing your screenshot..."; break;;
+		esac
+		printf "\r\033[K\033[%sA" $N
+		paint
+	done
+fi
+
 if [ -n "$AUTOCUT_COLOR" ] || [ -n "$CUT_FROM" ]; then
 	SIZE_W=$(identify -format "%[fx:w]" "$INFILE")
 	SIZE_H=$(identify -format "%[fx:h]" "$INFILE")
