@@ -35,14 +35,20 @@ help() {
 		ex:    $(basename "$0") -c 200-300 foo.png #cut from px 200-300
 		ex:    $(basename "$0") -a FF0000 foo.png # cut everything which has color FF000
 		ex:    $(basename "$0") -i foo.png # launch interactive selection
+		ex:    $(basename "$0") -o /path/to/optionsfile # Defaults to $CONFIGFILE
 
 		You may place a file in $CONFIGFILE with your favourite default config, e.g.:
+	HELP
+	writeconfig
+}
+writeconfig(){
+	cat <<-CONFIG
 		TORN_RIGHT=$TORN_RIGHT
 		TORN_LEFT=$TORN_LEFT
 		TORN_TOP=$TORN_TOP
 		TORN_BOTTOM=$TORN_BOTTOM
-		AUTOCUT_COLOR=ff0000
-	HELP
+		AUTOCUT_COLOR=$AUTOCUT_COLOR
+	CONFIG
 }
 
 TORN_RIGHT=true
@@ -137,8 +143,7 @@ readc() { # arg: <variable-name>
 
 while getopts rRlLtTbBc:a:ih option; do
 	case "$option" in
-		i)
-			INTERACTIVE=true;;
+		i) INTERACTIVE=true;;
 		r) TORN_RIGHT=false ;;
 		R) TORN_RIGHT=true ;;
 		l) TORN_LEFT=false ;;
@@ -155,9 +160,7 @@ while getopts rRlLtTbBc:a:ih option; do
 				exit
 			fi
 			;;
-		a)
-			AUTOCUT_COLOR=$OPTARG
-			;;
+		a) AUTOCUT_COLOR=$OPTARG ;;
 		h) usage; help; exit 0 ;;
 		\?) usage; exit 1 ;;
 	esac
@@ -225,7 +228,7 @@ TMPFILE=$(mktemp "torned_tmp_$(basename "$INFILE")_XXXXXX")
 
 cp "$INFILE" "$TMPFILE"
 
-torn() {
+torn_borders() {
 	# add border on all sides we do not want an effect
 	mogrify -border 10 "$1"
 	for side in $2; do
@@ -274,12 +277,12 @@ if [ -n "$CUT_FROM" ]; then
 	BOT_TMPFILE=$(mktemp "torned-bot_tmp_$(basename "$INFILE")_XXXXXX")
 	convert "${TMPFILE}" -crop "${SIZE_W}x$((SIZE_H - CUT_TO))+0+${CUT_TO}" +repage "${BOT_TMPFILE}"
 
-	torn "$TOP_TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,$TORN_TOP $BOTTOM_OFFSET,true"
-	torn "$BOT_TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,true $BOTTOM_OFFSET,$TORN_BOTTOM"
+	torn_borders "$TOP_TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,$TORN_TOP $BOTTOM_OFFSET,true"
+	torn_borders "$BOT_TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,true $BOTTOM_OFFSET,$TORN_BOTTOM"
 	convert -append "$TOP_TMPFILE" "$BOT_TMPFILE" "$TMPFILE"
 	rm "$TOP_TMPFILE" "$BOT_TMPFILE"
 else
-	torn "$TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,$TORN_TOP $BOTTOM_OFFSET,$TORN_BOTTOM"
+	torn_borders "$TMPFILE" "$RIGHT_OFFSET,$TORN_RIGHT $LEFT_OFFSET,$TORN_LEFT $TOP_OFFSET,$TORN_TOP $BOTTOM_OFFSET,$TORN_BOTTOM"
 fi
 
 mv "$TMPFILE" "$OUTFILE"
