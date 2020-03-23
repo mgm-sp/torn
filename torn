@@ -198,7 +198,7 @@ if [ "$INTERACTIVE" = "true" ]; then
 			printf "─────────b─────────"
 		fi
 		printf "┘\n"
-		printf "[tlbr#qp] "
+		printf "[tlbr#qp?] "
 	}
 	paint
 	while readc C; do
@@ -218,6 +218,17 @@ if [ "$INTERACTIVE" = "true" ]; then
 				rm "$TMP_CONFIG"
 				$PREVIEW_COMMAND "$TMP_IMAGE"
 				rm "$TMP_IMAGE"
+				;;
+			"?")
+				cat <<-HELP
+
+					The following options are available:
+					rltb     ... toggle right/left/top/bottom corner
+					#<color> ... enter a new color code to grep for
+					p        ... preview picture with $PREVIEW_COMMAND
+					q        ... quit interactive selection and process screenshot
+				HELP
+				printf "\r\033[6A"
 				;;
 		esac
 		printf "\r\033[K\033[%sA" $N
