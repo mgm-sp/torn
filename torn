@@ -64,52 +64,6 @@ if [ -f "$CONFIGFILE" ]; then
 	. "$CONFIGFILE"
 fi
 
-paint() {
-	if [ "true" = "$TORN_LEFT" ];then
-		L="┆"
-	else
-		L="│"
-	fi
-	if [ "true" = "$TORN_RIGHT" ];then
-		R="┆"
-	else
-		R="│"
-	fi
-	printf "┌"
-	if [ "true" = "$TORN_TOP" ];then
-		printf "┈┈┈┈┈┈┈┈┈t┈┈┈┈┈┈┈┈┈"
-	else
-		printf "─────────t─────────"
-	fi
-	printf "┐\n"
-
-	printf "%s                   %s\n" $L $R
-
-	if [ -n "$AUTOCUT_COLOR" ];then
-		printf "├"
-		printf "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
-		printf "┤\n"
-
-		printf "l      #%s      r\n" "$AUTOCUT_COLOR"
-
-		printf "├"
-		printf "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
-		printf "┤\n"
-	else
-		printf "l                   r\n"
-	fi
-
-	printf "%s                   %s\n" $L $R
-
-	printf "└"
-	if [ "true" = "$TORN_BOTTOM" ];then
-		printf "┈┈┈┈┈┈┈┈┈b┈┈┈┈┈┈┈┈┈"
-	else
-		printf "─────────b─────────"
-	fi
-	printf "┘\n"
-	printf "[tlbr#q] "
-}
 # from https://unix.stackexchange.com/questions/464930/can-i-read-a-single-character-from-stdin-in-posix-shell
 readc() { # arg: <variable-name>
   if [ -t 0 ]; then
@@ -197,6 +151,52 @@ if [ -n "$AUTOCUT_COLOR" ] && [ -n "$CUT_FROM" ]; then
 	exit
 fi
 if [ "$INTERACTIVE" = "true" ]; then
+	paint() {
+		if [ "true" = "$TORN_LEFT" ];then
+			L="┆"
+		else
+			L="│"
+		fi
+		if [ "true" = "$TORN_RIGHT" ];then
+			R="┆"
+		else
+			R="│"
+		fi
+		printf "┌"
+		if [ "true" = "$TORN_TOP" ];then
+			printf "┈┈┈┈┈┈┈┈┈t┈┈┈┈┈┈┈┈┈"
+		else
+			printf "─────────t─────────"
+		fi
+		printf "┐\n"
+
+		printf "%s                   %s\n" $L $R
+
+		if [ -n "$AUTOCUT_COLOR" ];then
+			printf "├"
+			printf "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+			printf "┤\n"
+
+			printf "l      #%s      r\n" "$AUTOCUT_COLOR"
+
+			printf "├"
+			printf "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+			printf "┤\n"
+		else
+			printf "l                   r\n"
+		fi
+
+		printf "%s                   %s\n" $L $R
+
+		printf "└"
+		if [ "true" = "$TORN_BOTTOM" ];then
+			printf "┈┈┈┈┈┈┈┈┈b┈┈┈┈┈┈┈┈┈"
+		else
+			printf "─────────b─────────"
+		fi
+		printf "┘\n"
+		printf "[tlbr#q] "
+	}
 	paint
 	while readc C; do
 		if [ -z "$AUTOCUT_COLOR" ]; then N=5; else N=7; fi
