@@ -48,6 +48,7 @@ writeconfig(){
 		TORN_TOP=$TORN_TOP
 		TORN_BOTTOM=$TORN_BOTTOM
 		AUTOCUT_COLOR=$AUTOCUT_COLOR
+		PREVIEW_COMMAND=$PREVIEW_COMMAND
 	CONFIG
 }
 
@@ -59,6 +60,8 @@ TORN_TOP=true
 TOP_OFFSET=+0+10
 TORN_BOTTOM=true
 BOTTOM_OFFSET=+0-10
+
+PREVIEW_COMMAND=display
 
 if [ -f "$CONFIGFILE" ]; then
 	. "$CONFIGFILE"
@@ -195,7 +198,7 @@ if [ "$INTERACTIVE" = "true" ]; then
 			printf "─────────b─────────"
 		fi
 		printf "┘\n"
-		printf "[tlbr#q] "
+		printf "[tlbr#qp] "
 	}
 	paint
 	while readc C; do
@@ -207,6 +210,15 @@ if [ "$INTERACTIVE" = "true" ]; then
 			b) if [ "true" = $TORN_BOTTOM ]; then TORN_BOTTOM=false; else TORN_BOTTOM=true; fi ;;
 			"#") readc A; readc B; readc C; readc D; readc E; readc F; AUTOCUT_COLOR="$A$B$C$D$E$F" ;;
 			q) printf "\rPlease wait while processing your screenshot..."; break;;
+			p)
+				TMP_CONFIG=$(mktemp)
+				TMP_IMAGE=$(mktemp --suffix "$(basename "$INFILE" | sed 's/^.*\(\.[^.]*\)$/\1/g')")
+				writeconfig > "$TMP_CONFIG"
+				torn -o "$TMP_CONFIG" "$INFILE" "$TMP_IMAGE"
+				rm "$TMP_CONFIG"
+				$PREVIEW_COMMAND "$TMP_IMAGE"
+				rm "$TMP_IMAGE"
+				;;
 		esac
 		printf "\r\033[K\033[%sA" $N
 		paint
